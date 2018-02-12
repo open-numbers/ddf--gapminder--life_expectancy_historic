@@ -1,0 +1,6 @@
+concept,name,concept_type
+life_expectancy_at_birth,Life expectancy at birth,measure
+life_expectancy_with_interpolations,"Life expectancy, with interpolations",measure
+area,Area,entity_domain
+year,Year,time
+name,Name,string

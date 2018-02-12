@@ -1,0 +1,139 @@
+{
+    "name": "ddf--gapminder--life_expectancy_historic",
+    "language": {
+        "id": "en"
+    },
+    "created": "2018-02-12T00:36:40.517237+00:00",
+    "resources": [
+        {
+            "path": "ddf--entities--area.csv",
+            "name": "ddf--entities--area",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "area"
+                    },
+                    {
+                        "name": "name"
+                    }
+                ],
+                "primaryKey": "area"
+            }
+        },
+        {
+            "path": "ddf--concepts.csv",
+            "name": "ddf--concepts",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "concept"
+                    },
+                    {
+                        "name": "name"
+                    },
+                    {
+                        "name": "concept_type"
+                    }
+                ],
+                "primaryKey": "concept"
+            }
+        },
+        {
+            "path": "ddf--datapoints--life_expectancy_with_interpolations--by--area--year.csv",
+            "name": "ddf--datapoints--life_expectancy_with_interpolations--by--area--year",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "area"
+                    },
+                    {
+                        "name": "year"
+                    },
+                    {
+                        "name": "life_expectancy_with_interpolations"
+                    }
+                ],
+                "primaryKey": [
+                    "area",
+                    "year"
+                ]
+            }
+        },
+        {
+            "path": "ddf--datapoints--life_expectancy_at_birth--by--area--year.csv",
+            "name": "ddf--datapoints--life_expectancy_at_birth--by--area--year",
+            "schema": {
+                "fields": [
+                    {
+                        "name": "area"
+                    },
+                    {
+                        "name": "year"
+                    },
+                    {
+                        "name": "life_expectancy_at_birth"
+                    }
+                ],
+                "primaryKey": [
+                    "area",
+                    "year"
+                ]
+            }
+        }
+    ],
+    "ddfSchema": {
+        "concepts": [
+            {
+                "primaryKey": [
+                    "concept"
+                ],
+                "value": "concept_type",
+                "resources": [
+                    "ddf--concepts"
+                ]
+            },
+            {
+                "primaryKey": [
+                    "concept"
+                ],
+                "value": "name",
+                "resources": [
+                    "ddf--concepts"
+                ]
+            }
+        ],
+        "entities": [
+            {
+                "primaryKey": [
+                    "area"
+                ],
+                "value": "name",
+                "resources": [
+                    "ddf--entities--area"
+                ]
+            }
+        ],
+        "datapoints": [
+            {
+                "primaryKey": [
+                    "area",
+                    "year"
+                ],
+                "value": "life_expectancy_with_interpolations",
+                "resources": [
+                    "ddf--datapoints--life_expectancy_with_interpolations--by--area--year"
+                ]
+            },
+            {
+                "primaryKey": [
+                    "area",
+                    "year"
+                ],
+                "value": "life_expectancy_at_birth",
+                "resources": [
+                    "ddf--datapoints--life_expectancy_at_birth--by--area--year"
+                ]
+            }
+        ]
+    }
+}
