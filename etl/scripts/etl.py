@@ -1,78 +1,58 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 
-import os
-
+import os.path as osp
 import pandas as pd
 
-from ddf_utils.str import to_concept_id
-
-# configure file path
-source = '../source/gapdata004 v7.xlsx'
-out_dir = '../../'
+from ddf_utils.io import open_google_spreadsheet, serve_datapoint
 
 
-def extract_datapoints(data, col, col_id):
-    """extract datapoints from source.
+DOCID = '11mulzUH3_cueq-V9D5KIlo9oHE9YYZrUSeVyCin7_rM'
+SHEET = 'data-for-countries-etc-by-year'
 
-    :parameters:
-    col: target column
-    col_id: the concept id of target column
-    """
-    dp = data[['Area', 'Year', col]].copy()
-    dp.columns = ['area', 'year', col_id]
-    dp['area'] = dp['area'].map(to_concept_id)
+DIMENSIONS = ['geo', 'time']
+OUT_DIR = '../../'
 
-    return dp
+COLUMN_TO_CONCEPT = {'Life expectancy': 'life_expectancy_at_birth'}
+
+
+def gen_datapoints(df_: pd.DataFrame):
+    df = df_.copy()
+    df = df.set_index(DIMENSIONS).drop('name', axis=1)  # set index and drop column 'name'
+    for c in df:
+        yield (c, df[[c]])
+
+
+def create_geo_domain(df: pd.DataFrame) -> pd.DataFrame:
+    return df[['geo', 'name']].drop_duplicates()
+
+
+def main():
+    print('running etl...')
+    data = pd.read_excel(open_google_spreadsheet(DOCID), sheet_name=SHEET)
+
+    measures = list()
+
+    for c, df in gen_datapoints(data):
+        c_id = COLUMN_TO_CONCEPT[c]
+        df.columns = [c_id]
+        serve_datapoint(df, OUT_DIR, c_id)
+
+        measures.append((c_id, c))
+
+    measures_df = pd.DataFrame(measures, columns=['concept', 'name'])
+    measures_df['concept_type'] = 'measure'
+
+    discrete_df = pd.DataFrame.from_dict(
+        dict(concept=['geo', 'name', 'year'],
+             name=['Geo', 'Name', 'Time'],
+             concept_type=['entity_domain', 'string', 'time'])
+    )
+    pd.concat([measures_df, discrete_df], ignore_index=True).to_csv(osp.join(OUT_DIR, 'ddf--concepts.csv'), index=False)
+
+    geo_df = create_geo_domain(data)
+    geo_df.to_csv(osp.join(OUT_DIR, 'ddf--entities--geo.csv'), index=False)
 
 
 if __name__ == '__main__':
-    data001 = pd.read_excel(source, sheet_name='Data & meta data')
-
-    # entities
-    area = data001['Area'].unique()
-    area_id = list(map(to_concept_id, area))
-    ent = pd.DataFrame([], columns=['area', 'name'])
-    ent['area'] = area_id
-    ent['name'] = area
-
-    path = os.path.join(out_dir, 'ddf--entities--area.csv')
-    ent.to_csv(path, index=False)
-
-    # datapoints
-    dps_list = ['Life expectancy at birth', 'Life expectancy, with interpolations']
-    dps = dict([(x, to_concept_id(x)) for x in dps_list])
-
-    for col, col_id in dps.items():
-        dp = extract_datapoints(data001, col, col_id)
-        path = os.path.join(out_dir, 'ddf--datapoints--{}--by--area--year.csv'.format(col_id))
-
-        dp.dropna().sort_values(by=['area', 'year']).to_csv(path, index=False)
-
-    # data001_dp_1 = data001[['Area', 'Year', 'Total Fertility Rate (TFR), also called Children per Woman']].copy()
-    # data001_dp_2 = data001[['Area', 'Year', 'TFR interpolated']].copy()
-
-    # data001_dp_1.columns = ['area', 'year', 'total_fertility_rate']
-    # data001_dp_2.columns = ['area', 'year', 'total_fertility_rate_interpolated']
-
-    # data001_dp_1['area'] = data001_dp_1['area'].map(to_concept_id)
-    # data001_dp_2['area'] = data001_dp_2['area'].map(to_concept_id)
-
-    # path1 = os.path.join(out_dir, 'ddf--datapoints--total_fertility_rate--by--area--year.csv')
-    # path2 = os.path.join(out_dir, 'ddf--datapoints--total_fertility_rate_interpolated--by--area--year.csv')
-
-    # data001_dp_1.dropna().sort_values(by=['area', 'year']).to_csv(path1, index=False)
-    # data001_dp_2.dropna().sort_values(by=['area', 'year']).to_csv(path2, index=False)
-
-    # concept
-    cdf = pd.DataFrame([], columns=['concept', 'name', 'concept_type'])
-    cdf['name'] = [*dps_list,
-                   'Area', 'Year', 'Name']
-    cdf['concept_type'] = [*['measure'] * len(dps_list),
-                           'entity_domain', 'time', 'string']
-    cdf['concept'] = cdf.name.map(dps)
-    cdf['concept'] = cdf['concept'].fillna(cdf['name'].map(to_concept_id))
-
-    path = os.path.join(out_dir, 'ddf--concepts.csv')
-    cdf.to_csv(path, index=False)
-
+    main()
     print('Done.')
